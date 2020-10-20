@@ -69,7 +69,7 @@ const getData = async () => {
         date = $($(tr).find("td").get(1)).find("span").html();
         if(matchNoticeUrl(relUrl)){
             notices.push({
-                url: process.env.NOTICE_URL+relUrl,
+                url: process.env.BASE_URL+relUrl,
                 name,
                 date
             });
