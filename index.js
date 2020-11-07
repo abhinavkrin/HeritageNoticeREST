@@ -65,11 +65,12 @@ const getData = async () => {
     for(let i = 0,tr,name,date; i < trows.length; i++){
         tr = $(trows[i]);
         relUrl = $(tr).find('a').attr('href');
-        name = $(tr).find('span').html();
+        name = $((tr).find("td").get(0)).find('span').html();
         date = $($(tr).find("td").get(1)).find("span").html();
         if(matchNoticeUrl(relUrl)){
             notices.push({
                 url: process.env.BASE_URL+relUrl,
+                relUrl,
                 name,
                 date
             });
