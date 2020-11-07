@@ -1,6 +1,38 @@
 const cheerio = require('cheerio');
 const got = require('got');
-require('dotenv').config();
+
+const BASE_URL = "https://www.heritageit.edu";
+const NOTICE_URL = "https://www.heritageit.edu/Notice.aspx";
+
+//matches if the given relative url is valid url of notice pdf file or not
+const matchNoticeUrl = val => /NoticePDF\/[0-9]+NOT[0-9]+.pdf/i.test(val)
+
+//Reads data from the heritage website
+const getData = async () => {
+    const response = await got(NOTICE_URL);
+    const $ = cheerio.load(response.body);
+    const trows = $('table#ctl00_ContentPlaceHolder1_GridView1 tr').toArray();
+    const notices = [];
+    for(let i = 0,tr,name,date; i < trows.length; i++){
+        tr = $(trows[i]);
+        relUrl = $(tr).find('a').attr('href');
+        name = $((tr).find("td").get(0)).find('span').html();
+        date = $($(tr).find("td").get(1)).find("span").html();
+        if(matchNoticeUrl(relUrl)){
+            notices.push({
+                url: BASE_URL+relUrl,
+                relUrl,
+                name,
+                date
+            });
+        }
+    }
+    return {notices};    
+}
+
+exports.getData = getData;
+
+//cloud function
 exports.getNotices = async (req,res) => {
     const isPretty = req.query.pretty == 1;
     try {
@@ -56,31 +88,3 @@ exports.getNotices = async (req,res) => {
         });
     }
 } 
-
-const getData = async () => {
-    const response = await got(process.env.NOTICE_URL);
-    const $ = cheerio.load(response.body);
-    const trows = $('table#ctl00_ContentPlaceHolder1_GridView1 tr').toArray();
-    const notices = [];
-    for(let i = 0,tr,name,date; i < trows.length; i++){
-        tr = $(trows[i]);
-        relUrl = $(tr).find('a').attr('href');
-        name = $((tr).find("td").get(0)).find('span').html();
-        date = $($(tr).find("td").get(1)).find("span").html();
-        if(matchNoticeUrl(relUrl)){
-            notices.push({
-                url: process.env.BASE_URL+relUrl,
-                relUrl,
-                name,
-                date
-            });
-        }
-    }
-    return {notices};    
-}
-
-const isUrl = val => /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/.test(val);
-
-const matchNoticeUrl = val => /NoticePDF\/[0-9]+NOT[0-9]+.pdf/i.test(val)
-
-exports.getData = getData;
