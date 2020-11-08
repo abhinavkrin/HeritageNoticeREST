@@ -1,4 +1,4 @@
-const { getData } = require(".");
+const { getData } = require("./index");
 
 getData()
 .then(data=>{
