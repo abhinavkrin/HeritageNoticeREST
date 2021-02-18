@@ -4,12 +4,12 @@ const qs = require('qs');
 
 const BASE_URL = "https://www.heritageit.edu/";
 const NOTICE_URL = "https://www.heritageit.edu/Notice.aspx";
-
+const NOTICE_DIR_URL = "https://www.heritageid.edu/NoticePDF/"; 
 //matches if the given relative url is valid url of notice pdf file or not
 //const matchNoticeUrl = val => /NoticePDF\/[0-9]+NOT[0-9]+.pdf/i.test(val) || /NoticePDF\/[0-9]+Notice[0-9]+.pdf/i.test(val) 
 const matchNoticeUrl = val => /NoticePDF\/.+\.pdf/i.test(val);
 
-const getId = (relUrl) => relUrl.toUpperCase().replace("NOTICEPDF/","").replace(".PDF","");
+const getId = (relUrl) => relUrl.replace(/NOTICEPDF\//i,"").replace(/\.PDF/i,"");
 
 const parseNotices = (body) => {
     //cheerio parses the html and returns a jquery object 
@@ -66,14 +66,15 @@ const extractFormData = (body,page) => {
 const getData = async (page=1) => {
 
     //creates a get request and returns the response
-    //const response = await got(NOTICE_URL);
     var config = {
         method: 'get',
         url: NOTICE_URL
     };
     const response = await axios(config);
     if(page===1 || page === "1")
-        return parseNotices(response.data);
+        return {
+            notices: parseNotices(response.data)
+        }
     else {
         var formData = extractFormData(response.data,page);
         var data = qs.stringify(formData);
@@ -86,7 +87,9 @@ const getData = async (page=1) => {
             data : data
         };
         const response2 = await axios(config2);
-        return parseNotices(response2.data);
+        return {
+            notices: parseNotices(response2.data)
+        };
     }
 }
 
@@ -94,6 +97,17 @@ exports.getData = getData;
 
 //cloud function
 exports.getNotices = async (req,res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method === 'OPTIONS') {
+        // Send response to OPTIONS requests
+        res.set('Access-Control-Allow-Methods', 'GET');
+        res.set('Access-Control-Allow-Headers', 'Content-Type');
+        res.set('Access-Control-Max-Age', '3600');
+        res.status(204).send('');
+        return;
+    } 
+
     const isPretty = req.query.pretty == 1;
     const page = parseInt(req.query.page);
     try {
