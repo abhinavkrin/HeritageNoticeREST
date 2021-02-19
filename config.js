@@ -12,3 +12,9 @@ const DB = {
 };
 
 exports.DB = DB;
+
+const TOPIC = {
+    NEW_NOTICE: "new-notice"
+};
+
+exports.TOPIC = TOPIC;

@@ -8,7 +8,8 @@
     "start": "node scrap.js",
     "deploy-api": "gcloud functions deploy getNotices --runtime nodejs10 --trigger-http --allow-unauthenticated ",
     "deploy-check-notice": "gcloud functions deploy checkNotices --runtime nodejs10 --trigger-topic check-notice",
-    "deploy": "npm run deploy-api && npm run deploy-check-notice"
+    "deploy-subscribe": "gcloud functions deploy subscribeClient --runtime nodejs10 --trigger-http --allow-unauthenticated",
+    "deploy": "npm run deploy-api && npm run deploy-check-notice && npm run deploy-subscribe"
   },
   "author": "Abhinav Kumar",
   "license": "ISC",

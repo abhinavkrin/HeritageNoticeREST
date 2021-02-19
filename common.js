@@ -2,11 +2,10 @@ const cheerio = require('cheerio');
 const axios = require('axios');
 const qs = require('qs');
 const admin = require('firebase-admin');
-const { NOTICE_URL, FIREBASE_URL, DB, BASE_URL } = require("./config");
+const { NOTICE_URL, DB, BASE_URL, TOPIC } = require("./config");
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
-    //databaseURL: FIREBASE_URL,
 });
 
 //matches if the given relative url is valid url of notice pdf file or not
@@ -86,9 +85,24 @@ const getData = async (page=1) => {
             notices: parseNotices(response.data)
         }
     else {
-        var formData = extractFormData(response.data,page);
-        var data = qs.stringify(formData);
-        var config2 = {
+        const j = parseInt(page);
+        let i,r;
+        for(i = 11, r = response ; i < j; i+=10){
+            const formData = extractFormData(r.data,i);
+            const data = qs.stringify(formData);
+            const config2 = {
+                method: "post",
+                url: NOTICE_URL,
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded', 
+                },
+                data : data
+            };
+            r = await axios(config2);
+        }
+        const formData = extractFormData(r.data,page);
+        const data = qs.stringify(formData);
+        const config2 = {
             method: "post",
             url: NOTICE_URL,
             headers: { 
@@ -123,7 +137,27 @@ const noticeExists = async (notice) => {
 }
 exports.noticeExists = noticeExists;
 
-const recordNotices = async (page=1) => {
+const notifyNotice = async (notice) => {
+    try {
+        const response = await admin.messaging().send({
+                topic: TOPIC.NEW_NOTICE,
+                notification: {
+                    title: "New Notice From HITK",
+                    body: notice.name
+                },
+                webpush: {
+                    fcmOptions: {
+                        link: process.env.CLIENT_APP_URL
+                    }
+                }
+            });
+        console.log("Notice sent with message id ",response);
+    }
+    catch (error){
+        console.error('Error sending message:', error);
+    };
+}
+const recordNotices = async (page=1,notify=false) => {
     const data = await getData(page);
     const notices = data.notices;
     let count = 0;
@@ -134,6 +168,9 @@ const recordNotices = async (page=1) => {
             try {
                 await saveNotice(notice);
                 count++;
+                if(notify){
+                    await notifyNotice(notice);
+                }
             } catch(e){
                 console.error(e);
             }
@@ -142,3 +179,14 @@ const recordNotices = async (page=1) => {
     console.log("Total Notices Saved: ",count);
 }
 exports.recordNotices = recordNotices;
+
+const subscribeClientToNewNotices = async (token) => {
+    try {
+        const response = await admin.messaging().subscribeToTopic(token,TOPIC.NEW_NOTICE);
+        console.log("Subscribed to new notice",response);
+    } catch(e) {
+        console.error(e);
+        throw e;
+    }
+}
+exports.subscribeClientToNewNotices = subscribeClientToNewNotices;

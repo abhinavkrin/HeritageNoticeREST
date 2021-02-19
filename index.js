@@ -1,4 +1,4 @@
-const { getData, recordNotices } = require("./common");
+const { getData, recordNotices, subscribeClientToNewNotices } = require("./common");
 
 //cloud function
 exports.getNotices = async (req,res) => {
@@ -15,6 +15,9 @@ exports.getNotices = async (req,res) => {
 
     const isPretty = req.query.pretty == 1;
     const page = parseInt(req.query.page);
+    if(!(page >= 1 && page <= (parseInt(process.env.MAX_PAGE) || 10))){
+        throw new Error("bad page number")
+    }
     try {
         const notices = await getData(page);    
         if(isPretty){
@@ -70,5 +73,24 @@ exports.getNotices = async (req,res) => {
 } 
 
 exports.checkNotices = async (event,context) => {
-    await recordNotices();
+    await recordNotices(1,true);
+}
+
+exports.subscribeClient = async (req,res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method === 'OPTIONS') {
+        // Send response to OPTIONS requests
+        res.set('Access-Control-Allow-Methods', 'GET');
+        res.set('Access-Control-Allow-Headers', 'Content-Type');
+        res.set('Access-Control-Max-Age', '3600');
+        res.status(204).send('');
+        return;
+    } 
+    
+    if(req.method === 'POST'){
+        const token = req.body.token;
+        await subscribeClientToNewNotices(token);
+        res.send(200);        
+    }
 }
