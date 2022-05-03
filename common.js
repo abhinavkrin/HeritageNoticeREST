@@ -2,7 +2,7 @@ const cheerio = require('cheerio');
 const axios = require('axios');
 const qs = require('qs');
 const admin = require('firebase-admin');
-const { NOTICE_URL, DB, BASE_URL, TOPIC } = require("./config");
+const { NOTICE_URL, DB, BASE_URL, TOPIC, TELEGRAM_BOT_API_URL, TELEGRAM_GROUP_ID } = require("./config");
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -32,7 +32,7 @@ const parseNotices = (body) => {
         tr = $(trows[i]);
 
         //finds the child <a> of current <tr>
-        relUrl = $(tr).find('a').attr('href');
+        const relUrl = $(tr).find('a').attr('href');
 
         //returns the text of <span> of the first <td> child of current <tr>
         name = $((tr).find("td").get(0)).find('span').html();
@@ -137,25 +137,54 @@ const noticeExists = async (notice) => {
 }
 exports.noticeExists = noticeExists;
 
+const notifyToPushSubscribers = async notice => {
+	const response = await admin.messaging().send({
+		topic: TOPIC.NEW_NOTICE,
+		notification: {
+			title: "New Notice From HITK",
+			body: notice.name
+		},
+		webpush: {
+			fcmOptions: {
+				link: process.env.CLIENT_APP_URL
+			}
+		}
+	});
+	return response;
+}
+
+const notifyToTelegramGroup = async notice => {
+	const response = await axios({
+		method: "post",
+		url: TELEGRAM_BOT_API_URL+'/sendDocument',
+		headers: { 
+			'Content-Type': 'application/json', 
+		},
+		data : {
+			chat_id: TELEGRAM_GROUP_ID,
+			document: notice.url,
+			caption: notice.name
+		}
+	});
+	return response.data;
+}
+
 const notifyNotice = async (notice) => {
     try {
-        const response = await admin.messaging().send({
-                topic: TOPIC.NEW_NOTICE,
-                notification: {
-                    title: "New Notice From HITK",
-                    body: notice.name
-                },
-                webpush: {
-                    fcmOptions: {
-                        link: process.env.CLIENT_APP_URL
-                    }
-                }
-            });
+        const response = await notifyToPushSubscribers(notice);
         console.log("Notice sent with message id ",response);
     }
     catch (error){
         console.error('Error sending message:', error);
-    };
+    }
+
+	try {
+        const response = await notifyToTelegramGroup(notice);
+        console.log("Notice sent to ",response.result.chat.title, " [chat_id: "+response.result.chat.id+", Message id: "+response.result.message_id+"]");
+    }
+    catch (error){
+        console.error('Error sending message to telegram group:', error);
+    }
 }
 const recordNotices = async (page=1,notify=false) => {
     const data = await getData(page);

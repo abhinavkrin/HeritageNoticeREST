@@ -6,9 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node scrap.js",
-    "deploy-api": "gcloud functions deploy getNotices --runtime nodejs10 --trigger-http --allow-unauthenticated ",
-    "deploy-check-notice": "gcloud functions deploy checkNotices --runtime nodejs10 --trigger-topic check-notice",
-    "deploy-subscribe": "gcloud functions deploy subscribeClient --runtime nodejs10 --trigger-http --allow-unauthenticated",
+    "deploy-api": "gcloud functions deploy getNotices --runtime nodejs12 --trigger-http --allow-unauthenticated ",
+    "deploy-check-notice": "gcloud functions deploy checkNotices --runtime nodejs12 --trigger-topic check-notice",
+    "deploy-subscribe": "gcloud functions deploy subscribeClient --runtime nodejs12 --trigger-http --allow-unauthenticated",
     "deploy": "npm run deploy-api && npm run deploy-check-notice && npm run deploy-subscribe"
   },
   "author": "Abhinav Kumar",
@@ -19,5 +19,8 @@
     "dotenv": "^8.2.0",
     "firebase-admin": "^9.5.0",
     "qs": "^6.9.6"
+  },
+  "devDependencies": {
+    "eslint": "^8.14.0"
   }
 }

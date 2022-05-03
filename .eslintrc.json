@@ -1,0 +1,18 @@
+{
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es2021": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
+    "rules": {
+		"eol-last":"error",
+		"no-unused-vars": "warn"
+    },
+	"globals": {
+		"process": true
+	}
+}

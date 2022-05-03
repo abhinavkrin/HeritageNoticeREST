@@ -1,4 +1,4 @@
-const { getData, recordNotices, subscribeClientToNewNotices } = require("./common");
+const { getData, recordNotices, subscribeClientToNewNotices} = require("./common");
 
 //cloud function
 exports.getNotices = async (req,res) => {
@@ -72,6 +72,7 @@ exports.getNotices = async (req,res) => {
     }
 } 
 
+// eslint-disable-next-line no-unused-vars
 exports.checkNotices = async (event,context) => {
     await recordNotices(1,true);
 }
